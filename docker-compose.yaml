@@ -1,0 +1,52 @@
+version: "3.9"               
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-container
+    volumes:
+      - volume_data_test:/var/lib/mysql
+      - ./my.cnf:/etc/mysql/my.cnf
+    environment:
+      MYSQL_DATABASE: online_shop_api
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+    networks:
+      - myappnetwork
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 10s
+      retries: 5
+
+  service:
+    image: oliver005/online_shop_api:${API_TAG}
+    container_name: service-container
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - myappnetwork
+    restart: always
+
+  client:
+    image: oliver005/online-shop-react:${CLIENT_TAG}
+    container_name: client-container
+    ports:
+      - "3000:80"
+    depends_on:
+      - service
+    networks:
+      - myappnetwork
+    restart: always
+
+volumes:
+  volume_data_test:
+
+networks:
+  myappnetwork : 
